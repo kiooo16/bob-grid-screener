@@ -1,20 +1,47 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Inter, system-ui, Arial, sans-serif; background: #0f172a; color: #e2e8f0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
 h1 { margin: 0 0 8px; }
 .sub { color: #94a3b8; margin: 0 0 8px; }
 .badge { display: inline-block; margin: 0 0 16px; padding: 6px 10px; border-radius: 999px; background: #1e293b; color: #cbd5e1; font-size: 13px; }
 .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
+.pagination { display: flex; gap: 10px; align-items: center; margin: 8px 0 12px; }
 input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #334155; background: #111827; color: #e2e8f0; }
 button { cursor: pointer; }
-.table-wrap { overflow-x: auto; border: 1px solid #334155; border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; background: #111827; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid #334155;
+  border-radius: 10px 10px 0 0;
+  max-height: 68vh;
+  background: #111827;
+}
+
+table { width: max-content; min-width: 100%; border-collapse: collapse; background: #111827; }
 th, td { border-bottom: 1px solid #1f2937; padding: 10px; text-align: right; white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
+th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #0b1224;
+}
 th button { width: 100%; text-align: right; background: transparent; border: none; color: #93c5fd; padding: 0; }
 .tag { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
 .tag.low { background: #14532d; }
 .tag.mid { background: #78350f; }
 .tag.high { background: #7f1d1d; }
-
 .reason-cell { text-align: left; white-space: normal; min-width: 320px; color: #cbd5e1; }
+
+.bottom-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid #334155;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  height: 16px;
+  position: sticky;
+  bottom: 0;
+  background: #0f172a;
+}

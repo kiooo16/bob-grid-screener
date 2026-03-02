@@ -1,5 +1,5 @@
 {
   "mode": "all",
-  "whitelist": ["BTCUSDT", "ETHUSDT"],
-  "blacklist": ["DOGEUSDT"]
+  "whitelist": [],
+  "blacklist": []
 }

@@ -6,3 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .DS_Store
+<<<<<<< codex/develop-grid-screener-web-app-focdo3
+
+logs/
+=======
+>>>>>>> main

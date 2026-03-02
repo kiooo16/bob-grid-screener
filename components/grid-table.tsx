@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type SnapshotRow = {
   symbol: string;
@@ -57,6 +57,7 @@ export type RulesConfig = {
 
 type SortKey = keyof SnapshotRow;
 type FilterState = Record<string, number>;
+type PageSize = 'all' | 50 | 100 | 200 | 500;
 
 function formatVolume(v: number): string {
   if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
@@ -76,7 +77,7 @@ function generateReason(row: SnapshotRow): string {
 
 function toCsv(rows: RowWithReason[]): string {
   const headers = ['symbol', 'ts', 'price', 'quote_volume', 'high24h', 'low24h', 'grid_score', 'vol_pct', 'chop_score', 'breakout_risk', 'upper', 'lower', 'grid_count', 'grid_step_pct', 'max_leverage', 'risk_tag', 'reason'];
-  const lines = rows.map((r) => headers.map((h) => JSON.stringify(String(r[h as keyof RowWithReason] ?? ''))).join(','));
+  const lines = rows.map((r) => headers.map((h) => JSON.stringify(String(r[h as keyof RowWithReason] ?? '')).replace(/\u2028|\u2029/g, ' ')).join(','));
   return [headers.join(','), ...lines].join('\n');
 }
 
@@ -103,14 +104,7 @@ function passFilter(value: number, mode: FilterDef['mode'], threshold: number): 
   return value === threshold;
 }
 
-export function GridTable({
-  rows,
-  rules,
-  updatedAt,
-  universeMode,
-  filteredCount,
-  totalCount
-}: {
+export function GridTable({ rows, rules, updatedAt, universeMode, filteredCount, totalCount }: {
   rows: SnapshotRow[];
   rules: RulesConfig;
   updatedAt: string;
@@ -129,6 +123,14 @@ export function GridTable({
   const [filterValues, setFilterValues] = useState<FilterState>(() => buildInitialFilterState(rules.filters));
   const [sortKey, setSortKey] = useState<SortKey>(rules.default_sort.key);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(rules.default_sort.direction);
+  const [pageSize, setPageSize] = useState<PageSize>(200);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
+  const bottomScrollRef = useRef<HTMLDivElement | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const syncingRef = useRef(false);
+  const [tableWidth, setTableWidth] = useState(0);
 
   const filtered = useMemo<RowWithReason[]>(() => {
     return liveRows
@@ -143,15 +145,63 @@ export function GridTable({
         })
       )
       .sort((a, b) => {
-        const av = a[sortKey];
-        const bv = b[sortKey];
-        const avn = av ?? '';
-        const bvn = bv ?? '';
-        const result = avn > bvn ? 1 : avn < bvn ? -1 : 0;
+        const av = a[sortKey] ?? '';
+        const bv = b[sortKey] ?? '';
+        const result = av > bv ? 1 : av < bv ? -1 : 0;
         return sortDir === 'asc' ? result : -result;
       })
       .map((r) => ({ ...r, reason: generateReason(r) }));
   }, [liveRows, rules.blacklist, rules.filters, search, filterValues, sortKey, sortDir]);
+
+  const totalPages = useMemo(() => {
+    if (pageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(filtered.length / pageSize));
+  }, [filtered.length, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterValues, sortKey, sortDir, pageSize, liveRows]);
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
+  const displayRows = useMemo(() => {
+    if (pageSize === 'all') return filtered;
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, pageSize, currentPage]);
+
+  useEffect(() => {
+    const syncWidth = () => setTableWidth(tableRef.current?.scrollWidth ?? 0);
+    syncWidth();
+    const id = setTimeout(syncWidth, 60);
+    window.addEventListener('resize', syncWidth);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('resize', syncWidth);
+    };
+  }, [displayRows.length, filtered.length]);
+
+  const onTableScroll = () => {
+    if (syncingRef.current) return;
+    const source = tableWrapRef.current;
+    const target = bottomScrollRef.current;
+    if (!source || !target) return;
+    syncingRef.current = true;
+    target.scrollLeft = source.scrollLeft;
+    syncingRef.current = false;
+  };
+
+  const onBottomScroll = () => {
+    if (syncingRef.current) return;
+    const source = bottomScrollRef.current;
+    const target = tableWrapRef.current;
+    if (!source || !target) return;
+    syncingRef.current = true;
+    target.scrollLeft = source.scrollLeft;
+    syncingRef.current = false;
+  };
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -186,6 +236,7 @@ export function GridTable({
     <section>
       <p className="badge">Universe 模式：{liveUniverseMode} · 数量：{liveFilteredCount} / {liveTotalCount}</p>
       <p className="sub">数据更新时间：{new Date(liveUpdatedAt).toLocaleString()}</p>
+      <p className="sub">表格显示：{displayRows.length} / 匹配结果：{filtered.length}</p>
 
       <div className="controls">
         <input placeholder="搜索 symbol" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -239,13 +290,35 @@ export function GridTable({
           );
         })}
 
+        <label>
+          显示条数
+          <select
+            value={String(pageSize)}
+            onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : (Number(e.target.value) as PageSize))}
+          >
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+            <option value="all">全部</option>
+          </select>
+        </label>
+
         <button onClick={onRefresh} disabled={isRefreshing}>{isRefreshing ? '刷新中...' : '刷新数据'}</button>
         <button onClick={() => download('grid-screener.json', JSON.stringify(filtered, null, 2), 'application/json')}>导出 JSON</button>
         <button onClick={() => download('grid-screener.csv', toCsv(filtered), 'text/csv')}>导出 CSV</button>
       </div>
 
-      <div className="table-wrap">
-        <table>
+      <div className="pagination">
+        <button onClick={() => setCurrentPage(1)} disabled={pageSize === 'all' || currentPage <= 1}>首页</button>
+        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={pageSize === 'all' || currentPage <= 1}>上一页</button>
+        <span>第 {currentPage} / {totalPages} 页</span>
+        <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={pageSize === 'all' || currentPage >= totalPages}>下一页</button>
+        <button onClick={() => setCurrentPage(totalPages)} disabled={pageSize === 'all' || currentPage >= totalPages}>末页</button>
+      </div>
+
+      <div className="table-wrap" ref={tableWrapRef} onScroll={onTableScroll}>
+        <table ref={tableRef}>
           <thead>
             <tr>
               <th><button onClick={() => onSort('symbol')}>symbol</button></th>
@@ -265,7 +338,7 @@ export function GridTable({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r) => {
+            {displayRows.map((r) => {
               const riskTag = r.risk_tag ?? (r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low');
               return (
                 <tr key={r.symbol}>
@@ -288,6 +361,10 @@ export function GridTable({
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="bottom-scroll" ref={bottomScrollRef} onScroll={onBottomScroll}>
+        <div style={{ width: tableWidth, height: 1 }} />
       </div>
     </section>
   );
