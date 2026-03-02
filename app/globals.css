@@ -16,7 +16,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .table-wrap {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #334155;
   border-radius: 10px 10px 0 0;
   max-height: 68vh;

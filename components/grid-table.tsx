@@ -66,7 +66,7 @@ function formatVolume(v: number): string {
 }
 
 function generateReason(row: SnapshotRow): string {
-  if (row.reason && row.reason.trim()) return row.reason;
+  if (row.reason && row.reason.trim() && row.reason.trim() !== '全量快照示例数据') return row.reason;
   const liquidity = row.quote_volume >= 10_000_000_000 ? '流动性很强' : row.quote_volume >= 1_000_000_000 ? '流动性充足' : '流动性一般';
   const volatility = row.vol_pct >= 2 && row.vol_pct <= 6 ? '波动适中' : row.vol_pct < 2 ? '波动偏低' : '波动偏高';
   const chop = row.chop_score >= 65 ? '震荡充分' : row.chop_score >= 50 ? '震荡尚可' : '震荡偏弱';
