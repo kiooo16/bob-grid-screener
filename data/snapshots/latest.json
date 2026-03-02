@@ -1,61 +1,58 @@
-{
-  "ts": "2026-03-02T11:16:30.677Z",
-  "items": [
-    {
-      "symbol": "BTCUSDT",
-      "grid_score": 78.4,
-      "vol_pct": 3.2,
-      "chop_score": 66.1,
-      "breakout_risk": 28,
-      "quote_volume": 18900000000,
-      "upper": 71350,
-      "lower": 66420,
-      "grid_count": 38,
-      "grid_step_pct": 0.35,
-      "max_leverage": 7,
-      "ts": "2026-03-02T10:11:48Z"
-    },
-    {
-      "symbol": "ETHUSDT",
-      "grid_score": 74.8,
-      "vol_pct": 3.9,
-      "chop_score": 60.2,
-      "breakout_risk": 35.4,
-      "quote_volume": 12200000000,
-      "upper": 3940,
-      "lower": 3620,
-      "grid_count": 31,
-      "grid_step_pct": 0.32,
-      "max_leverage": 7,
-      "ts": "2026-03-02T10:11:48Z"
-    },
-    {
-      "symbol": "SOLUSDT",
-      "grid_score": 81.6,
-      "vol_pct": 5.2,
-      "chop_score": 72.9,
-      "breakout_risk": 31.2,
-      "quote_volume": 4980000000,
-      "upper": 181.5,
-      "lower": 163.8,
-      "grid_count": 46,
-      "grid_step_pct": 0.28,
-      "max_leverage": 5,
-      "ts": "2026-03-02T10:11:48Z"
-    },
-    {
-      "symbol": "DOGEUSDT",
-      "grid_score": 69.5,
-      "vol_pct": 6.7,
-      "chop_score": 63.5,
-      "breakout_risk": 48.7,
-      "quote_volume": 2360000000,
-      "upper": 0.182,
-      "lower": 0.159,
-      "grid_count": 42,
-      "grid_step_pct": 0.3,
-      "max_leverage": 3,
-      "ts": "2026-03-02T10:11:48Z"
-    }
-  ]
-}
+[
+  {
+    "symbol": "BTCUSDT",
+    "grid_score": 78.4,
+    "vol_pct": 3.2,
+    "chop_score": 66.1,
+    "breakout_risk": 28.0,
+    "quote_volume": 18900000000,
+    "upper": 71350,
+    "lower": 66420,
+    "grid_count": 38,
+    "grid_step_pct": 0.35,
+    "max_leverage": 7,
+    "ts": "2026-03-02T10:11:48Z"
+  },
+  {
+    "symbol": "ETHUSDT",
+    "grid_score": 74.8,
+    "vol_pct": 3.9,
+    "chop_score": 60.2,
+    "breakout_risk": 35.4,
+    "quote_volume": 12200000000,
+    "upper": 3940,
+    "lower": 3620,
+    "grid_count": 31,
+    "grid_step_pct": 0.32,
+    "max_leverage": 7,
+    "ts": "2026-03-02T10:11:48Z"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "grid_score": 81.6,
+    "vol_pct": 5.2,
+    "chop_score": 72.9,
+    "breakout_risk": 31.2,
+    "quote_volume": 4980000000,
+    "upper": 181.5,
+    "lower": 163.8,
+    "grid_count": 46,
+    "grid_step_pct": 0.28,
+    "max_leverage": 5,
+    "ts": "2026-03-02T10:11:48Z"
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "grid_score": 69.5,
+    "vol_pct": 6.7,
+    "chop_score": 63.5,
+    "breakout_risk": 48.7,
+    "quote_volume": 2360000000,
+    "upper": 0.182,
+    "lower": 0.159,
+    "grid_count": 42,
+    "grid_step_pct": 0.3,
+    "max_leverage": 3,
+    "ts": "2026-03-02T10:11:48Z"
+  }
+]

@@ -57,7 +57,6 @@ export type RulesConfig = {
 
 type SortKey = keyof SnapshotRow;
 type FilterState = Record<string, number>;
-type PageSize = 'all' | 50 | 100 | 200 | 500;
 
 function formatVolume(v: number): string {
   if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
@@ -130,7 +129,6 @@ export function GridTable({
   const [filterValues, setFilterValues] = useState<FilterState>(() => buildInitialFilterState(rules.filters));
   const [sortKey, setSortKey] = useState<SortKey>(rules.default_sort.key);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(rules.default_sort.direction);
-  const [pageSize, setPageSize] = useState<PageSize>('all');
 
   const filtered = useMemo<RowWithReason[]>(() => {
     return liveRows
@@ -154,11 +152,6 @@ export function GridTable({
       })
       .map((r) => ({ ...r, reason: generateReason(r) }));
   }, [liveRows, rules.blacklist, rules.filters, search, filterValues, sortKey, sortDir]);
-
-  const displayRows = useMemo(() => {
-    if (pageSize === 'all') return filtered;
-    return filtered.slice(0, pageSize);
-  }, [filtered, pageSize]);
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -193,7 +186,6 @@ export function GridTable({
     <section>
       <p className="badge">Universe 模式：{liveUniverseMode} · 数量：{liveFilteredCount} / {liveTotalCount}</p>
       <p className="sub">数据更新时间：{new Date(liveUpdatedAt).toLocaleString()}</p>
-      <p className="sub">表格显示：{displayRows.length} / 匹配结果：{filtered.length}</p>
 
       <div className="controls">
         <input placeholder="搜索 symbol" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -247,17 +239,6 @@ export function GridTable({
           );
         })}
 
-        <label>
-          显示条数
-          <select value={String(pageSize)} onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value) as PageSize)}>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="500">500</option>
-            <option value="all">全部</option>
-          </select>
-        </label>
-
         <button onClick={onRefresh} disabled={isRefreshing}>{isRefreshing ? '刷新中...' : '刷新数据'}</button>
         <button onClick={() => download('grid-screener.json', JSON.stringify(filtered, null, 2), 'application/json')}>导出 JSON</button>
         <button onClick={() => download('grid-screener.csv', toCsv(filtered), 'text/csv')}>导出 CSV</button>
@@ -284,7 +265,7 @@ export function GridTable({
             </tr>
           </thead>
           <tbody>
-            {displayRows.map((r) => {
+            {filtered.map((r) => {
               const riskTag = r.risk_tag ?? (r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low');
               return (
                 <tr key={r.symbol}>
