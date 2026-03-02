@@ -9,7 +9,8 @@
     "lint": "next lint",
     "snapshot:futures": "node scripts/fetch_snapshot_binance_futures.mjs",
     "snapshot:job": "node scripts/run_snapshot_job.mjs",
-    "scheduler:check": "node scripts/diagnose_scheduler.mjs"
+    "scheduler:check": "node scripts/diagnose_scheduler.mjs",
+    "snapshot:validate": "node scripts/validate_snapshot_symbols.mjs"
   },
   "dependencies": {
     "next": "14.2.5",

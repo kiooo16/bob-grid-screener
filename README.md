@@ -34,6 +34,13 @@ npm run dev
 - `data/snapshots/latest.json`
   - 顶层：`ts`
   - 列表：`items[]`
+- `data/symbol_map.json`
+  - 记录最新 exchangeInfo 的 symbol 映射缓存（默认 futures-usdt）
+
+说明：
+
+- 当前默认市场为 `futures-usdt`（`fapi` 接口）。
+- 若映射缺失，系统会回退为原始 `symbol`，不会再生成 `COINxxxx` 占位名。
 
 ## universe.json 结构
 

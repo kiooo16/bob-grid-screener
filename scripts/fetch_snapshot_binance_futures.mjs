@@ -1,5 +1,28 @@
-const EXCHANGE_INFO_URL = 'https://fapi.binance.com/fapi/v1/exchangeInfo';
-const TICKER_24H_URL = 'https://fapi.binance.com/fapi/v1/ticker/24hr';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+const MARKET = (process.env.BINANCE_MARKET || 'futures-usdt').toLowerCase();
+
+const MARKET_CONFIG = {
+  'futures-usdt': {
+    exchangeInfoUrl: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+    ticker24hUrl: 'https://fapi.binance.com/fapi/v1/ticker/24hr',
+    symbolFilter: (s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.contractType === 'PERPETUAL'
+  },
+  spot: {
+    exchangeInfoUrl: 'https://api.binance.com/api/v3/exchangeInfo',
+    ticker24hUrl: 'https://api.binance.com/api/v3/ticker/24hr',
+    symbolFilter: (s) => s.status === 'TRADING' && s.quoteAsset === 'USDT'
+  },
+  'futures-coinm': {
+    exchangeInfoUrl: 'https://dapi.binance.com/dapi/v1/exchangeInfo',
+    ticker24hUrl: 'https://dapi.binance.com/dapi/v1/ticker/24hr',
+    symbolFilter: (s) => s.status === 'TRADING' && s.contractType === 'PERPETUAL' && typeof s.symbol === 'string'
+  }
+};
+
+const activeMarket = MARKET_CONFIG[MARKET] || MARKET_CONFIG['futures-usdt'];
+const PLACEHOLDER_SYMBOL_RE = /^COIN\d+/i;
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -37,18 +60,39 @@ async function getJson(url) {
 
 async function main() {
   const now = new Date().toISOString();
-  const [exchangeInfo, ticker24h] = await Promise.all([getJson(EXCHANGE_INFO_URL), getJson(TICKER_24H_URL)]);
+  const [exchangeInfo, ticker24h] = await Promise.all([
+    getJson(activeMarket.exchangeInfoUrl),
+    getJson(activeMarket.ticker24hUrl)
+  ]);
+
+  const symbolMap = new Map(
+    (exchangeInfo.symbols || []).map((s) => [String(s.symbol || '').toUpperCase(), String(s.symbol || '').toUpperCase()])
+  );
 
   const tradable = new Set(
     (exchangeInfo.symbols || [])
-      .filter((s) => s.status === 'TRADING' && s.quoteAsset === 'USDT' && s.contractType === 'PERPETUAL')
-      .map((s) => s.symbol)
+      .filter(activeMarket.symbolFilter)
+      .map((s) => String(s.symbol || '').toUpperCase())
   );
+  const validSymbols = new Set((exchangeInfo.symbols || []).map((s) => String(s.symbol || '').toUpperCase()));
+  const badSymbolLogs = [];
 
   const items = ticker24h
-    .filter((t) => tradable.has(t.symbol))
+    .filter((t) => tradable.has(String(t.symbol || '').toUpperCase()))
     .map((t) => {
-      const symbol = t.symbol;
+      const rawSymbol = String(t.symbol || '').toUpperCase();
+      const mappedSymbol = symbolMap.get(rawSymbol) || rawSymbol;
+      const symbol = validSymbols.has(mappedSymbol) ? mappedSymbol : rawSymbol;
+
+      if (!validSymbols.has(symbol)) {
+        badSymbolLogs.push(`${new Date().toISOString()}\tinvalid_symbol\traw=${rawSymbol}\tmapped=${mappedSymbol}\tmarket=${MARKET}`);
+        return null;
+      }
+
+      if (!symbol || PLACEHOLDER_SYMBOL_RE.test(symbol)) {
+        badSymbolLogs.push(`${new Date().toISOString()}\tplaceholder_symbol\traw=${rawSymbol}\tresolved=${symbol}\tmarket=${MARKET}`);
+        return null;
+      }
       const price = Number(t.lastPrice || 0);
       const high24h = Number(t.highPrice || 0);
       const low24h = Number(t.lowPrice || 0);
@@ -92,16 +136,33 @@ async function main() {
         reason
       };
     })
+    .filter(Boolean)
     .sort((a, b) => b.quote_volume - a.quote_volume);
+
+  if (items.some((row) => PLACEHOLDER_SYMBOL_RE.test(row.symbol))) {
+    throw new Error('snapshot contains placeholder symbols (COINxxxx), aborting');
+  }
 
   const output = { ts: now, items };
 
-  const { writeFile } = await import('node:fs/promises');
-  const { resolve } = await import('node:path');
   const outputPath = resolve(process.cwd(), 'data/snapshots/latest.json');
+  const mapPath = resolve(process.cwd(), 'data/symbol_map.json');
+  const badSymbolsPath = resolve(process.cwd(), 'data/snapshots/bad_symbols.log');
+
+  await mkdir(resolve(process.cwd(), 'data/snapshots'), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
+  await writeFile(
+    mapPath,
+    `${JSON.stringify({ market: MARKET, ts: now, size: symbolMap.size, symbols: Object.fromEntries(symbolMap) }, null, 2)}\n`,
+    'utf8'
+  );
+  await writeFile(badSymbolsPath, `${badSymbolLogs.join('\n')}${badSymbolLogs.length ? '\n' : ''}`, 'utf8');
 
   console.log(`Wrote ${items.length} symbols to ${outputPath}`);
+  console.log(`Wrote symbol map (${symbolMap.size}) to ${mapPath}`);
+  if (badSymbolLogs.length) {
+    console.log(`Wrote ${badSymbolLogs.length} invalid symbol logs to ${badSymbolsPath}`);
+  }
 }
 
 main().catch((err) => {
