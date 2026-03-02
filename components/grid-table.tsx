@@ -5,16 +5,21 @@ import { useMemo, useState } from 'react';
 export type SnapshotRow = {
   symbol: string;
   ts: string;
-  grid_score: number;
+  price?: number;
+  quote_volume: number;
+  high24h?: number;
+  low24h?: number;
   vol_pct: number;
+  grid_score: number;
   chop_score: number;
   breakout_risk: number;
-  quote_volume: number;
   upper: number;
   lower: number;
   grid_count: number;
   grid_step_pct: number;
   max_leverage: number;
+  risk_tag?: 'low' | 'mid' | 'high' | string;
+  reason?: string;
 };
 
 type RowWithReason = SnapshotRow & { reason: string };
@@ -60,6 +65,7 @@ function formatVolume(v: number): string {
 }
 
 function generateReason(row: SnapshotRow): string {
+  if (row.reason && row.reason.trim()) return row.reason;
   const liquidity = row.quote_volume >= 10_000_000_000 ? '流动性很强' : row.quote_volume >= 1_000_000_000 ? '流动性充足' : '流动性一般';
   const volatility = row.vol_pct >= 2 && row.vol_pct <= 6 ? '波动适中' : row.vol_pct < 2 ? '波动偏低' : '波动偏高';
   const chop = row.chop_score >= 65 ? '震荡充分' : row.chop_score >= 50 ? '震荡尚可' : '震荡偏弱';
@@ -69,8 +75,8 @@ function generateReason(row: SnapshotRow): string {
 }
 
 function toCsv(rows: RowWithReason[]): string {
-  const headers = ['symbol', 'ts', 'grid_score', 'vol_pct', 'chop_score', 'breakout_risk', 'quote_volume', 'upper', 'lower', 'grid_count', 'grid_step_pct', 'max_leverage', 'reason'];
-  const lines = rows.map((r) => headers.map((h) => JSON.stringify(String(r[h as keyof RowWithReason]))).join(','));
+  const headers = ['symbol', 'ts', 'price', 'quote_volume', 'high24h', 'low24h', 'grid_score', 'vol_pct', 'chop_score', 'breakout_risk', 'upper', 'lower', 'grid_count', 'grid_step_pct', 'max_leverage', 'risk_tag', 'reason'];
+  const lines = rows.map((r) => headers.map((h) => JSON.stringify(String(r[h as keyof RowWithReason] ?? ''))).join(','));
   return [headers.join(','), ...lines].join('\n');
 }
 
@@ -139,7 +145,9 @@ export function GridTable({
       .sort((a, b) => {
         const av = a[sortKey];
         const bv = b[sortKey];
-        const result = av > bv ? 1 : av < bv ? -1 : 0;
+        const avn = av ?? '';
+        const bvn = bv ?? '';
+        const result = avn > bvn ? 1 : avn < bvn ? -1 : 0;
         return sortDir === 'asc' ? result : -result;
       })
       .map((r) => ({ ...r, reason: generateReason(r) }));
@@ -258,7 +266,7 @@ export function GridTable({
           </thead>
           <tbody>
             {filtered.map((r) => {
-              const riskTag = r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low';
+              const riskTag = r.risk_tag ?? (r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low');
               return (
                 <tr key={r.symbol}>
                   <td>{r.symbol}</td>

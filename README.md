@@ -4,7 +4,7 @@
 
 ## 功能
 
-- 从 `data/snapshots/latest.json` 读取快照数据（每条包含 `ts` ISO 时间字段）。
+- 从 `data/snapshots/latest.json` 读取快照数据（顶层 `ts` + `items`）。
 - 从 `config/rules.json` 读取规则配置。
 - 从 `config/universe.json` 读取 universe 过滤配置。
 - 首页表格支持：
@@ -13,10 +13,23 @@
   - 排序（点击表头）
   - 显示 reason 解释列
 - 页面显示：
-  - 当前 universe 模式与数量
+  - 当前 universe 模式与数量（过滤后 / 原始总数）
   - 数据更新时间
   - 「刷新数据」按钮（重新拉取 snapshot 并刷新表格）
 - 支持导出当前筛选结果：JSON / CSV（包含 `reason` 字段）。
+
+## 获取 Binance Futures 全标的快照
+
+```bash
+npm run snapshot:futures
+npm run dev
+```
+
+`snapshot:futures` 会请求 Binance USDT 永续全量 TRADING 合约，并写入：
+
+- `data/snapshots/latest.json`
+  - 顶层：`ts`
+  - 列表：`items[]`
 
 ## universe.json 结构
 

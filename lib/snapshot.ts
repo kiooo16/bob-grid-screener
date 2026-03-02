@@ -10,10 +10,23 @@ export type UniverseConfig = {
   blacklist: string[];
 };
 
+type SnapshotFile = {
+  ts?: string;
+  items: SnapshotRow[];
+};
+
 async function readJson<T>(filePath: string): Promise<T> {
   const fullPath = path.join(process.cwd(), filePath);
   const content = await fs.readFile(fullPath, 'utf8');
   return JSON.parse(content) as T;
+}
+
+function normalizeSnapshot(input: SnapshotRow[] | SnapshotFile): SnapshotFile {
+  if (Array.isArray(input)) {
+    const ts = input.reduce((acc, row) => (row.ts > acc ? row.ts : acc), '');
+    return { ts, items: input };
+  }
+  return { ts: input.ts, items: input.items || [] };
 }
 
 function applyUniverse(rows: SnapshotRow[], universe: UniverseConfig): SnapshotRow[] {
@@ -26,20 +39,22 @@ function applyUniverse(rows: SnapshotRow[], universe: UniverseConfig): SnapshotR
   return rows.filter((row) => !deny.has(row.symbol.toUpperCase()));
 }
 
-function getUpdatedAt(rows: SnapshotRow[]): string {
+function getUpdatedAt(ts: string | undefined, rows: SnapshotRow[]): string {
+  if (ts) return ts;
   const maxTs = rows.reduce((acc, row) => (row.ts > acc ? row.ts : acc), '');
   return maxTs || new Date().toISOString();
 }
 
 export async function loadSnapshotBundle() {
-  const snapshots = await readJson<SnapshotRow[]>('data/snapshots/latest.json');
+  const rawSnapshot = await readJson<SnapshotRow[] | SnapshotFile>('data/snapshots/latest.json');
+  const snapshot = normalizeSnapshot(rawSnapshot);
   const universe = await readJson<UniverseConfig>('config/universe.json');
-  const universeRows = applyUniverse(snapshots, universe);
+  const universeRows = applyUniverse(snapshot.items, universe);
   return {
     rows: universeRows,
-    updatedAt: getUpdatedAt(snapshots),
+    updatedAt: getUpdatedAt(snapshot.ts, snapshot.items),
     universeMode: universe.mode,
     filteredCount: universeRows.length,
-    totalCount: snapshots.length
+    totalCount: snapshot.items.length
   };
 }

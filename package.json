@@ -6,6 +6,7 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
+    "snapshot:futures": "node scripts/fetch_snapshot_binance_futures.mjs",
     "lint": "next lint"
   },
   "dependencies": {
