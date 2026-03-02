@@ -6,15 +6,10 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-
     "lint": "next lint",
     "snapshot:futures": "node scripts/fetch_snapshot_binance_futures.mjs",
     "snapshot:job": "node scripts/run_snapshot_job.mjs",
     "scheduler:check": "node scripts/diagnose_scheduler.mjs"
-
-    "snapshot:futures": "node scripts/fetch_snapshot_binance_futures.mjs",
-    "lint": "next lint"
-
   },
   "dependencies": {
     "next": "14.2.5",

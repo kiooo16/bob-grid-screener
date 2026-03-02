@@ -317,54 +317,56 @@ export function GridTable({ rows, rules, updatedAt, universeMode, filteredCount,
         <button onClick={() => setCurrentPage(totalPages)} disabled={pageSize === 'all' || currentPage >= totalPages}>末页</button>
       </div>
 
-      <div className="table-wrap" ref={tableWrapRef} onScroll={onTableScroll}>
-        <table ref={tableRef}>
-          <thead>
-            <tr>
-              <th><button onClick={() => onSort('symbol')}>symbol</button></th>
-              <th>ts</th>
-              <th><button onClick={() => onSort('grid_score')}>grid_score</button></th>
-              <th><button onClick={() => onSort('vol_pct')}>vol_pct</button></th>
-              <th><button onClick={() => onSort('chop_score')}>chop_score</button></th>
-              <th><button onClick={() => onSort('breakout_risk')}>breakout_risk</button></th>
-              <th><button onClick={() => onSort('quote_volume')}>quote_volume</button></th>
-              <th><button onClick={() => onSort('upper')}>upper</button></th>
-              <th><button onClick={() => onSort('lower')}>lower</button></th>
-              <th><button onClick={() => onSort('grid_count')}>grid_count</button></th>
-              <th><button onClick={() => onSort('grid_step_pct')}>grid_step_pct</button></th>
-              <th><button onClick={() => onSort('max_leverage')}>max_leverage</button></th>
-              <th>risk_tag</th>
-              <th>reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayRows.map((r) => {
-              const riskTag = r.risk_tag ?? (r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low');
-              return (
-                <tr key={r.symbol}>
-                  <td>{r.symbol}</td>
-                  <td>{new Date(r.ts).toLocaleString()}</td>
-                  <td>{r.grid_score.toFixed(2)}</td>
-                  <td>{r.vol_pct.toFixed(2)}</td>
-                  <td>{r.chop_score.toFixed(2)}</td>
-                  <td>{r.breakout_risk.toFixed(2)}</td>
-                  <td>{Math.round(r.quote_volume).toLocaleString()}</td>
-                  <td>{r.upper}</td>
-                  <td>{r.lower}</td>
-                  <td>{r.grid_count}</td>
-                  <td>{r.grid_step_pct}</td>
-                  <td>{r.max_leverage}</td>
-                  <td><span className={`tag ${riskTag}`}>{riskTag}</span></td>
-                  <td className="reason-cell">{r.reason}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <div className="table-area">
+        <div className="table-wrap" ref={tableWrapRef} onScroll={onTableScroll}>
+          <table ref={tableRef}>
+            <thead>
+              <tr>
+                <th><button onClick={() => onSort('symbol')}>symbol</button></th>
+                <th>ts</th>
+                <th><button onClick={() => onSort('grid_score')}>grid_score</button></th>
+                <th><button onClick={() => onSort('vol_pct')}>vol_pct</button></th>
+                <th><button onClick={() => onSort('chop_score')}>chop_score</button></th>
+                <th><button onClick={() => onSort('breakout_risk')}>breakout_risk</button></th>
+                <th><button onClick={() => onSort('quote_volume')}>quote_volume</button></th>
+                <th><button onClick={() => onSort('upper')}>upper</button></th>
+                <th><button onClick={() => onSort('lower')}>lower</button></th>
+                <th><button onClick={() => onSort('grid_count')}>grid_count</button></th>
+                <th><button onClick={() => onSort('grid_step_pct')}>grid_step_pct</button></th>
+                <th><button onClick={() => onSort('max_leverage')}>max_leverage</button></th>
+                <th>risk_tag</th>
+                <th>reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map((r) => {
+                const riskTag = r.risk_tag ?? (r.breakout_risk >= 70 ? 'high' : r.breakout_risk >= 40 ? 'mid' : 'low');
+                return (
+                  <tr key={r.symbol}>
+                    <td>{r.symbol}</td>
+                    <td>{new Date(r.ts).toLocaleString()}</td>
+                    <td>{r.grid_score.toFixed(2)}</td>
+                    <td>{r.vol_pct.toFixed(2)}</td>
+                    <td>{r.chop_score.toFixed(2)}</td>
+                    <td>{r.breakout_risk.toFixed(2)}</td>
+                    <td>{Math.round(r.quote_volume).toLocaleString()}</td>
+                    <td>{r.upper}</td>
+                    <td>{r.lower}</td>
+                    <td>{r.grid_count}</td>
+                    <td>{r.grid_step_pct}</td>
+                    <td>{r.max_leverage}</td>
+                    <td><span className={`tag ${riskTag}`}>{riskTag}</span></td>
+                    <td className="reason-cell">{r.reason}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-      <div className="bottom-scroll" ref={bottomScrollRef} onScroll={onBottomScroll}>
-        <div style={{ width: tableWidth, height: 1 }} />
+        <div className="bottom-scroll" ref={bottomScrollRef} onScroll={onBottomScroll}>
+          <div style={{ width: tableWidth, height: 1 }} />
+        </div>
       </div>
     </section>
   );

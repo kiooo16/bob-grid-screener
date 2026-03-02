@@ -10,6 +10,11 @@ input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid
 button { cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.table-area {
+  position: relative;
+  padding-bottom: 20px;
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid #334155;
@@ -40,8 +45,9 @@ th button { width: 100%; text-align: right; background: transparent; border: non
   border: 1px solid #334155;
   border-top: none;
   border-radius: 0 0 10px 10px;
-  height: 16px;
+  height: 18px;
   position: sticky;
   bottom: 0;
+  z-index: 5;
   background: #0f172a;
 }
