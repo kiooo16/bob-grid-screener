@@ -10,6 +10,16 @@ export type UniverseConfig = {
   blacklist: string[];
 };
 
+type UniverseInput =
+  | UniverseConfig
+  | {
+      mode?: UniverseMode;
+      symbols?: string[];
+      whitelist?: string[];
+      blacklist?: string[];
+    }
+  | string[];
+
 type SnapshotFile = {
   ts?: string;
   items: SnapshotRow[];
@@ -21,6 +31,16 @@ async function readJson<T>(filePath: string): Promise<T> {
   const fullPath = path.join(process.cwd(), filePath);
   const content = await fs.readFile(fullPath, 'utf8');
   return JSON.parse(content) as T;
+}
+
+async function readJsonIfExists<T>(filePath: string): Promise<T | null> {
+  try {
+    return await readJson<T>(filePath);
+  } catch (error) {
+    const e = error as NodeJS.ErrnoException;
+    if (e?.code === 'ENOENT') return null;
+    throw error;
+  }
 }
 
 function normalizeSnapshot(input: SnapshotRow[] | SnapshotFile): SnapshotFile {
@@ -40,11 +60,50 @@ function normalizeRows(rows: SnapshotRow[]): SnapshotRow[] {
 function applyUniverse(rows: SnapshotRow[], universe: UniverseConfig): SnapshotRow[] {
   if (universe.mode === 'all') return rows;
   if (universe.mode === 'whitelist') {
+    if (universe.whitelist.length === 0) return rows;
     const allow = new Set(universe.whitelist.map((s) => s.toUpperCase()));
     return rows.filter((row) => allow.has(row.symbol.toUpperCase()));
   }
+  if (universe.blacklist.length === 0) return rows;
   const deny = new Set(universe.blacklist.map((s) => s.toUpperCase()));
   return rows.filter((row) => !deny.has(row.symbol.toUpperCase()));
+}
+
+function normalizeUniverse(input: UniverseInput | null): UniverseConfig {
+  if (!input) {
+    return { mode: 'all', whitelist: [], blacklist: [] };
+  }
+
+  if (Array.isArray(input)) {
+    if (input.length === 0) return { mode: 'all', whitelist: [], blacklist: [] };
+    return { mode: 'whitelist', whitelist: input, blacklist: [] };
+  }
+
+  const obj = input as { mode?: UniverseMode; symbols?: string[]; whitelist?: string[]; blacklist?: string[] };
+  const mode = obj.mode ?? 'all';
+  const symbols = Array.isArray(obj.symbols) ? obj.symbols : [];
+  const whitelist = Array.isArray(obj.whitelist) ? obj.whitelist : [];
+  const blacklist = Array.isArray(obj.blacklist) ? obj.blacklist : [];
+
+  if (mode === 'whitelist') {
+    const effective = whitelist.length > 0 ? whitelist : symbols;
+    if (effective.length === 0) return { mode: 'all', whitelist: [], blacklist: [] };
+    return { mode: 'whitelist', whitelist: effective, blacklist: [] };
+  }
+
+  if (mode === 'blacklist') {
+    if (blacklist.length === 0) return { mode: 'all', whitelist: [], blacklist: [] };
+    return { mode: 'blacklist', whitelist: [], blacklist };
+  }
+
+  return { mode: 'all', whitelist: [], blacklist: [] };
+}
+
+async function loadUniverseConfig(): Promise<UniverseConfig> {
+  const local = await readJsonIfExists<UniverseInput>('config/universe.local.json');
+  if (local !== null) return normalizeUniverse(local);
+  const shared = await readJsonIfExists<UniverseInput>('config/universe.json');
+  return normalizeUniverse(shared);
 }
 
 function getUpdatedAt(ts: string | undefined, rows: SnapshotRow[]): string {
@@ -57,8 +116,11 @@ export async function loadSnapshotBundle() {
   const rawSnapshot = await readJson<SnapshotRow[] | SnapshotFile>('data/snapshots/latest.json');
   const snapshot = normalizeSnapshot(rawSnapshot);
   const cleanRows = normalizeRows(snapshot.items);
-  const universe = await readJson<UniverseConfig>('config/universe.json');
+  const universe = await loadUniverseConfig();
   const universeRows = applyUniverse(cleanRows, universe);
+  console.log(
+    `[snapshot] universeEnabled=${universe.mode !== 'all'} mode=${universe.mode} whitelist=${universe.whitelist.length} blacklist=${universe.blacklist.length} snapshotRows=${cleanRows.length} finalRows=${universeRows.length}`
+  );
   return {
     rows: universeRows,
     updatedAt: getUpdatedAt(snapshot.ts, cleanRows),

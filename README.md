@@ -41,6 +41,8 @@ npm run dev
 
 - 当前默认市场为 `futures-usdt`（`fapi` 接口）。
 - 若映射缺失，系统会回退为原始 `symbol`，不会再生成 `COINxxxx` 占位名。
+- Universe 配置读取优先级：`config/universe.local.json` > `config/universe.json`。
+- 当 universe 文件缺失、内容为 `[]`、或白名单为空时，会自动视为 `all`（不过滤，显示全量）。
 
 ## universe.json 结构
 
