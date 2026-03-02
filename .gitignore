@@ -8,3 +8,5 @@ pnpm-debug.log*
 .DS_Store
 
 logs/
+
+logs/
