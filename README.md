@@ -16,9 +16,6 @@
   - 当前 universe 模式与数量（过滤后 / 原始总数）
   - 数据更新时间
   - 「刷新数据」按钮（重新拉取 snapshot 并刷新表格）
-  - 「显示条数」选择器（50/100/200/500/全部）
-  - 分页控件（首页/上一页/下一页/末页）
-  - 固定顶部表头 + 固定底部横向滚动条
 - 支持导出当前筛选结果：JSON / CSV（包含 `reason` 字段）。
 
 ## 获取 Binance Futures 全标的快照
@@ -72,51 +69,4 @@ npm run dev
 ```bash
 npm run build
 npm run start
-```
-
-
-## 调度与推送链路排查（VPS）
-
-新增两个脚本：
-
-```bash
-npm run snapshot:job       # 带日志与健康文件的更新任务（失败可报警）
-npm run scheduler:check    # 检查 cron/systemd/pm2/TZ/健康状态
-```
-
-### 日志与健康检查
-
-- 日志文件：`logs/snapshot-job.log`
-- 健康文件：`logs/snapshot-health.json`
-  - 包含 `ok`, `exitCode`, `startedAt`, `finishedAt`, `lastError`
-
-### 失败报警
-
-设置环境变量后，任务失败会 POST 报警：
-
-```bash
-export ALERT_WEBHOOK_URL="https://your-webhook-endpoint"
-```
-
-未配置时失败会写日志并在 stderr 输出告警。
-
-### 调度示例
-
-**cron（每小时）**
-
-```cron
-0 * * * * cd /path/to/bob-grid-screener && /usr/bin/npm run snapshot:job >> /path/to/bob-grid-screener/logs/cron.log 2>&1
-```
-
-**systemd timer（推荐）**
-
-- service 执行 `npm run snapshot:job`
-- timer 每小时触发
-- 环境变量（如 `ALERT_WEBHOOK_URL`、`TZ`）写入 service 的 `Environment=`
-
-**pm2**
-
-```bash
-pm2 start npm --name grid-snapshot-job -- run snapshot:job
-pm2 logs grid-snapshot-job
 ```
